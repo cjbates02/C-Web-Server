@@ -154,6 +154,28 @@ void handle_http_request(int fd, struct cache *cache)
     // Read request
     int bytes_recvd = recv(fd, request, request_buffer_size - 1, 0);
 
+    const int max_req_param_len = 32;
+
+    char http_version[max_req_param_len];
+    char path[max_req_param_len];
+    char type[max_req_param_len];
+
+    sscanf(request, "%s %s %s", type, path, http_version);
+    printf("Parsed Request Params: %s %s %s\n", type, path, http_version);
+    if (strcmp(path, "/d20") == 0) {
+        printf("Recieved request fo /d20 , returning random number.\n");
+        get_d20(fd);
+    } else if (strcmp(type, "GET") == 0) {
+        printf("Received GET request, serving file %s\n", path);
+        get_file(fd, cache, path);
+    } else if (strcmp(type, "POST") == 0) {
+        printf("Recieved POST request, have not implemented handler yet...\n");
+        resp_404(fd);
+    } else {
+        printf("Recieved request of type %s, I cannot help you...\n", type);
+        resp_404(fd);
+    }
+
     if (bytes_recvd < 0) {
         perror("recv");
         return;
@@ -211,7 +233,7 @@ int main(void)
             continue;
         }
 
-        resp_404(newfd);
+        // resp_404(newfd);
 
         // Print out a message that we got the connection
         inet_ntop(their_addr.ss_family,
