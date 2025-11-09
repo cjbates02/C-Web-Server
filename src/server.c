@@ -48,7 +48,7 @@
  * 
  * Return the value from the send() function.
  */
-int send_response(int fd, char *header, char *content_type, void *body, int content_length)
+int send_response(int fd, char *header, char *content_type, char *body, int content_length)
 {
     const int max_response_size = 262144;
     char response[max_response_size];
@@ -62,7 +62,7 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
 
     // Build HTTP response and store it in response
     int response_length;
-    response_length = sprintf(response, "%s\nDate: %sConnection: close\nContent-Length: %u\nContent-Type: %s\n\n%s", header, info, content_length, content_type, body);
+    response_length = sprintf(response, "%s\nDate: %sConnection: close\nContent-Length: %u\nContent-Type: %s\n\n%s", header, asctime(info), content_length, content_type, body);
     
 
     // Send it all!
@@ -210,6 +210,8 @@ int main(void)
             perror("accept");
             continue;
         }
+
+        resp_404(newfd);
 
         // Print out a message that we got the connection
         inet_ntop(their_addr.ss_family,
