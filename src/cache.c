@@ -49,19 +49,19 @@ void dllist_move_to_head(struct cache *cache, struct cache_entry *ce)
     if (ce != cache->head) {
         if (ce == cache->tail) {
             // We're the tail
-            cache->tail = ce->prev;
-            cache->tail->next = NULL;
+            cache->tail = ce->prev; // point the tail to the previous entry.
+            cache->tail->next = NULL; // detach the old tail.
 
         } else {
             // We're neither the head nor the tail
-            ce->prev->next = ce->next;
-            ce->next->prev = ce->prev;
+            ce->prev->next = ce->next; // attach the element behind us to the element in front of us.
+            ce->next->prev = ce->prev; // attach the element in front of us the element behind us.
         }
 
-        ce->next = cache->head;
-        cache->head->prev = ce;
-        ce->prev = NULL;
-        cache->head = ce;
+        ce->next = cache->head; // point our next to the current head.
+        cache->head->prev = ce; // point the current head prev pointer to us.
+        ce->prev = NULL; // we are the head so no prev pointer.
+        cache->head = ce; // set this cache entry to the head.
     }
 }
 
