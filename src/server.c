@@ -82,16 +82,20 @@ int send_response(int fd, char *header, char *content_type, char *body, int cont
 void get_d20(int fd)
 {
     // Generate a random number between 1 and 20 inclusive
-    
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    srand(time(NULL)); // seed the random number generator with the current time.
+    int min = 0; 
+    int max = 20;
+    int random_num = (rand() % (max - min + 1)) + min;
+
+    char content[32];
+    sprintf(content, "%d", random_num);
+
+    int content_length = strlen(content);
+
+    printf("Generated random number %d with content length %d.\n", random_num, content_length);
 
     // Use send_response() to send it back as text/plain data
-
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    send_response(fd, "HTTP/1.1 200 OK", "text/plain", content, content_length);
 }
 
 /**
@@ -163,7 +167,7 @@ void handle_http_request(int fd, struct cache *cache)
     sscanf(request, "%s %s %s", type, path, http_version);
     printf("Parsed Request Params: %s %s %s\n", type, path, http_version);
     if (strcmp(path, "/d20") == 0) {
-        printf("Recieved request fo /d20 , returning random number.\n");
+        printf("Recieved request for /d20 , returning random number.\n");
         get_d20(fd);
     } else if (strcmp(type, "GET") == 0) {
         printf("Received GET request, serving file %s\n", path);
