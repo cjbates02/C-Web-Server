@@ -129,9 +129,23 @@ void resp_404(int fd)
  */
 void get_file(int fd, struct cache *cache, char *request_path)
 {
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    // serve the requested file from disk.
+    struct file_data *filedata;
+    char filepath[100];
+    char *mime_type;
+
+    sprintf(filepath, "%s%s", SERVER_ROOT, request_path);
+    printf("Serving file at %s", filepath);
+    filedata = file_load(filepath);
+    if (filedata == NULL) {
+        resp_404(fd);
+        return;
+    }
+
+    // find the correct mimetype for the requested file.
+    mime_type = mime_type_get(filepath);
+
+    send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
 }
 
 /**
@@ -184,20 +198,6 @@ void handle_http_request(int fd, struct cache *cache)
         perror("recv");
         return;
     }
-
-
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
-
-    // Read the first two components of the first line of the request 
- 
-    // If GET, handle the get endpoints
-
-    //    Check if it's /d20 and handle that special case
-    //    Otherwise serve the requested file by calling get_file()
-
-
     // (Stretch) If POST, handle the post request
 }
 
