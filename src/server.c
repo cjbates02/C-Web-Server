@@ -53,21 +53,29 @@ int send_response(int fd, char *header, char *content_type, char *body, int cont
     const int max_response_size = 262144;
     char response[max_response_size];
 
-    // Get the date time
     time_t raw_time;
     struct tm *info;
     time(&raw_time);
     info = localtime(&raw_time);
+    char *date_str = asctime(info);
+    date_str[strcspn(date_str, "\n")] = 0;  // Remove \n
 
+    int response_length = snprintf(response, max_response_size,
+        "%s\r\n"
+        "Date: %s\r\n"
+        "Connection: close\r\n"
+        "Content-Length: %d\r\n"
+        "Content-Type: %s\r\n"
+        "\r\n",
+        header, date_str, content_length, content_type);
 
-    // Build HTTP response and store it in response
-    int response_length;
-    response_length = sprintf(response, "%s\nDate: %sConnection: close\nContent-Length: %u\nContent-Type: %s\n\n%s", header, asctime(info), content_length, content_type, body);
-    
+    // Append body
+    if (content_length > 0 && body != NULL) {
+        memcpy(response + response_length, body, content_length);
+        response_length += content_length;
+    }
 
-    // Send it all!
     int rv = send(fd, response, response_length, 0);
-
     if (rv < 0) {
         perror("send");
     }
@@ -130,24 +138,34 @@ void resp_404(int fd)
 void get_file(int fd, struct cache *cache, char *request_path)
 {
     // serve the requested file from disk.
-    struct file_data *filedata;
     char filepath[100];
     char *mime_type;
-
+    int is_file_cached = 0;
+    struct file_data *filedata;
+    
     sprintf(filepath, "%s%s", SERVER_ROOT, request_path);
-    printf("Serving file at %s", filepath);
-    filedata = file_load(filepath);
+    printf("Serving file at %s\n", filepath);
+    struct cache_entry *cached_entry = cache_get(cache, request_path);
+    if (cached_entry != NULL) {
+        printf("Loading file from cache...\n");
+        filedata = malloc(sizeof(cached_entry));
+        filedata->data = cached_entry->content;
+        filedata->size = cached_entry->content_length;
+        mime_type = cached_entry->content_type;
+        is_file_cached = 1;
+    } else {
+        printf("Loading file from disk...\n");
+        filedata = file_load(filepath);
+        mime_type = mime_type_get(filepath);
+        cache_put(cache, request_path, mime_type, filedata->data, filedata->size);
+    }
     if (filedata == NULL) {
         resp_404(fd);
         return;
     }
-
-    // find the correct mimetype for the requested file.
-    mime_type = mime_type_get(filepath);
-
+    
     send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
-
-    file_free(filedata);
+    if (!is_file_cached) file_free(filedata);
 }
 
 /**
